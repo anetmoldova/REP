@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealEstateIQ - Landing Page</title>
+    <style>
+        :root {
+            --color-soft: #F0F0F0;
+            --color-primary: #896F8C;
+            --color-secondary: #2AB3A6;
+            --color-accent: #FF7E5F;
+            --color-success: #81C784;
+            --color-warning: #F4B400;
+            --color-error: #E53935;
+            --color-border: #E0E0E0;
+            --color-charcoal: #333333;
+            --color-muted: #666666;
+            --color-white: #FFFFFF;
+        }
+        body {
+            background: var(--color-soft);
+            color: var(--color-charcoal);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .top-notice {
+            display: none;
+        }
+        @media (min-width: 768px) {
+            .top-notice {
+                display: block;
+                text-align: center;
+                font-size: 0.95em;
+                padding: 0.6em 0;
+                background: var(--color-white);
+                border-bottom: 1px solid var(--color-border);
+            }
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: var(--color-white);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 64px;
+        }
+        .logo {
+            font-weight: 600;
+            font-size: 1.25em;
+            letter-spacing: 0.01em;
+        }
+        nav {
+            display: none;
+        }
+        @media (min-width: 768px) {
+            nav {
+                display: flex;
+                gap: 2em;
+                font-size: 1em;
+            }
+        }
+        nav a {
+            color: var(--color-charcoal);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        nav a:hover {
+            color: var(--color-primary);
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8em;
+        }
+        .header-actions a {
+            color: var(--color-charcoal);
+            text-decoration: none;
+            font-size: 1em;
+            transition: color 0.2s;
+        }
+        .header-actions a:hover {
+            color: var(--color-primary);
+        }
+        .btn-primary {
+            background: var(--color-primary);
+            color: var(--color-white);
+            border: none;
+            border-radius: 0.6em;
+            padding: 0.7em 2em;
+            font-weight: 500;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: #6D5777;
+            outline: none;
+        }
+        .btn-accent {
+            background: var(--color-accent);
+            color: var(--color-white);
+            border: none;
+            border-radius: 0.6em;
+            padding: 0.7em 2em;
+            font-weight: 500;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-accent:hover, .btn-accent:focus {
+            background: #E86655;
+            outline: none;
+        }
+        .hero {
+            padding: 5em 0 6em 0;
+        }
+        .hero-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3em;
+            align-items: center;
+            padding: 0 24px;
+        }
+        @media (min-width: 900px) {
+            .hero-inner {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .hero-title {
+            font-size: 2.5em;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .hero-title .text-primary {
+            color: var(--color-primary);
+        }
+        .hero-desc {
+            margin-top: 1.5em;
+            font-size: 1.15em;
+            color: var(--color-muted);
+            max-width: 38em;
+        }
+        .hero-actions {
+            margin-top: 2em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em;
+        }
+        .hero-badges {
+            margin-top: 1.2em;
+            display: flex;
+            gap: 0.8em;
+            font-size: 0.95em;
+            color: var(--color-muted);
+        }
+        .badge {
+            padding: 0.4em 1em;
+            border-radius: 999px;
+            background: rgba(137,111,140,0.08);
+            color: var(--color-primary);
+            font-weight: 500;
+        }
+        .badge-secondary {
+            background: rgba(42,179,166,0.08);
+            color: var(--color-secondary);
+        }
+        .analytics-card {
+            background: var(--color-white);
+            border: 1px solid var(--color-border);
+            border-radius: 1.2em;
+            padding: 2em;
+            box-shadow: 0 2px 8px rgba(51,51,51,0.04);
+        }
+        .analytics-preview {
+            height: 160px;
+            border-radius: 0.7em;
+            background: linear-gradient(135deg, rgba(137,111,140,0.10), rgba(42,179,166,0.10), rgba(255,126,95,0.10));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-muted);
+            font-size: 1.1em;
+        }
+        .analytics-stats {
+            margin-top: 1.5em;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1em;
+            text-align: center;
+        }
+        .analytics-stats .stat {
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        .analytics-stats .label {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-muted);
+        }
+        /* Features section */
+        .features {
+            padding: 6em 0 6em 0;
+            border-top: 1px solid var(--color-border);
+        }
+        .features-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .features-title {
+            font-size: 2em;
+            font-weight: 600;
+            margin-bottom: 2em;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2em;
+        }
+        @media (min-width: 900px) {
+            .features-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        .feature-card {
+            background: var(--color-white);
+            border: 1px solid var(--color-border);
+            border-radius: 1em;
+            padding: 2em;
+            transition: box-shadow 0.2s;
+        }
+        .feature-card:hover {
+            box-shadow: 0 4px 16px rgba(137,111,140,0.10);
+        }
+        .feature-card h3 {
+            font-size: 1.15em;
+            font-weight: 500;
+            margin-bottom: 0.7em;
+        }
+        .feature-card p {
+            font-size: 1em;
+            color: var(--color-muted);
+        }
+    </style>
+</head>
+<body>
+  <!-- Top Notice -->
+  <div class="top-notice">
+    <span class="font-medium">Live:</span> Market data refreshed hourly.
+  </div>
+
+  <!-- Nav -->
+  <header>
+    <div class="nav-container">
+      <div class="logo">RealEstateIQ</div>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#sources">Data Sources</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a href="#" class="sign-in">Sign In</a>
+        <a href="#start" class="btn-primary">Start Free</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1 class="hero-title">
+          See the <span class="text-primary">market</span>. Know the value. Move smarter.
+        </h1>
+        <p class="hero-desc">
+          Real-time pricing intelligence from millions of listings—visualized simply for buyers, investors, and analysts.
+        </p>
+        <div class="hero-actions">
+          <a class="btn-primary">Get Started</a>
+          <a class="btn-accent">View Demo</a>
+        </div>
+        <div class="hero-badges">
+          <span class="badge">Hourly Updates</span>
+          <span class="badge badge-secondary">AI Insights</span>
+        </div>
+      </div>
+      <div class="relative">
+        <!-- Placeholder analytics card -->
+        <div class="analytics-card">
+          <div class="analytics-preview">
+            Visualization Preview
+          </div>
+          <div class="analytics-stats">
+            <div>
+              <div class="stat">2.4M+</div>
+              <div class="label">Listings</div>
+            </div>
+            <div>
+              <div class="stat">24</div>
+              <div class="label">Markets</div>
+            </div>
+            <div>
+              <div class="stat">Hourly</div>
+              <div class="label">Refresh</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="features-inner">
+      <h2 class="features-title">Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>Smart Pricing Insights</h3>
+          <p>Compare listings against local medians & historical trends instantly.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Heatmaps & Trends</h3>
+          <p>Visualize neighborhood momentum & demand density.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Comparable Finder</h3>
+          <p>Auto-surface relevant comps with configurable filters.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

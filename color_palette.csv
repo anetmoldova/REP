@@ -1,0 +1,12 @@
+﻿Purpose,Color Name,HEX,Description
+Base Background,Soft Grey,#F0F0F0,Soft neutral grey for overall app background
+Primary,Dusty Purple,#896F8C,"Main header, buttons, and primary accents"
+Secondary,Cool Teal,#2AB3A6,"For secondary buttons, highlights"
+Accent,Coral,#FF7E5F,"Attention-catching elements (e.g., CTA) with better harmony"
+Text (Primary),Charcoal,#333333,Main text for good readability
+Text (Secondary),Medium Grey,#666666,"Subtext, labels"
+Border / Divider,Light Border,#E0E0E0,Subtle dividers or card outlines
+Success,Light Green,#81C784,Soft green for success messages
+Warning,Gold Ochre,#F4B400,Toned down yellow for warnings
+Error,Crimson Red,#E53935,For errors or alerts
+White Elements,Pure White,#FFFFFF,"For cards, modals, etc., on grey bg"
