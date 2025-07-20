@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from apps.rep_app.views import landing
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', landing, name='landing'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
