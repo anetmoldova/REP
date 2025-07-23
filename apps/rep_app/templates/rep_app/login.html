@@ -5,91 +5,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - RealEstateIQ</title>
-  <style>
-    body {
-      background: #F0F0F0;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-container {
-      background: #fff;
-      border-radius: 1.2em;
-      box-shadow: 0 2px 16px rgba(137,111,140,0.10);
-      padding: 2.5em 2em 2em 2em;
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      font-size: 2em;
-      font-weight: 700;
-      margin-bottom: 0.7em;
-      color: #896F8C;
-    }
-    form {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 1.2em;
-    }
-    label {
-      font-size: 1em;
-      color: #333;
-      margin-bottom: 0.3em;
-    }
-    input[type="text"], input[type="email"], input[type="password"] {
-      padding: 0.8em;
-      border: 1px solid #E0E0E0;
-      border-radius: 0.5em;
-      font-size: 1em;
-      background: #F5F5F5;
-      outline: none;
-      transition: border 0.2s;
-    }
-    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
-      border: 1.5px solid #896F8C;
-    }
-    button[type="submit"] {
-      background: #896F8C;
-      color: #fff;
-      border: none;
-      border-radius: 0.6em;
-      padding: 0.9em 0;
-      font-size: 1.1em;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 0.5em;
-      transition: background 0.2s;
-    }
-    button[type="submit"]:hover {
-      background: #6D5777;
-    }
-    .signup-link {
-      margin-top: 1.5em;
-      font-size: 0.98em;
-      color: #666;
-    }
-    .signup-link a {
-      color: #896F8C;
-      text-decoration: none;
-      font-weight: 500;
-      margin-left: 0.3em;
-    }
-    .signup-link a:hover {
-      text-decoration: underline;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
   <div class="login-container">
     <h1>Log In</h1>
+
+    {% if messages %}
+      <ul class="auth-messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
     <form method="post">
       {% csrf_token %}
       <label for="username">Username or Email</label>
@@ -98,13 +27,15 @@
       <input type="password" id="password" name="password" required />
       <button type="submit">Log In</button>
     </form>
+
     <div class="signup-link">
       Don't have an account?
       <a href="{% url 'signup' %}">Sign up</a>
     </div>
+
     <div style="margin-top: 1em;">
-      <a href="{% url 'landing' %}" style="color: #896F8C; text-decoration: none; font-weight: 500;">&larr; Back to Home</a>
+      <a href="{% url 'landing' %}" class="back-home">&larr; Back to Home</a>
     </div>
   </div>
 </body>
-</html> 
+</html>
