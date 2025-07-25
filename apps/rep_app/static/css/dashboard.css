@@ -169,3 +169,56 @@ body {
   border: 1px solid var(--color-border);
   height: 200px;
 }
+/* Profile Dropdown (fixed styling) */
+.profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.profile img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid var(--color-primary);
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  z-index: 100;
+  padding: 0.5rem 0;
+  flex-direction: column;
+}
+
+.dropdown.show {
+  display: flex;
+}
+
+.dropdown a,
+.dropdown button.dropdown-btn {
+  all: unset;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--color-charcoal);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown a:hover,
+.dropdown button.dropdown-btn:hover {
+  background-color: var(--color-soft);
+  color: var(--color-primary);
+}

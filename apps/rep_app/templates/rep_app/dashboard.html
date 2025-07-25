@@ -14,6 +14,21 @@
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.toggle("collapsed");
       });
+
+      // Dropdown toggle
+      const profilePic = document.getElementById("profilePic");
+      const dropdown = document.getElementById("dropdownMenu");
+      profilePic.addEventListener("click", () => {
+        dropdown.classList.toggle("show");
+      });
+
+      // Close dropdown on outside click
+      document.addEventListener("click", function (e) {
+        const profile = document.getElementById("profileDropdown");
+        if (!profile.contains(e.target)) {
+          dropdown.classList.remove("show");
+        }
+      });
     });
   </script>
 </head>
@@ -35,9 +50,16 @@
       <!-- User profile -->
       <div class="top-profile">
         <div class="spacer"></div>
-        <div class="profile">
-          <span class="username">John Doe</span>
-          <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" />
+        <div class="profile" id="profileDropdown">
+          <span class="username">Welcome, {{ request.user.username }}!</span>
+          <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" id="profilePic" />
+          <div class="dropdown" id="dropdownMenu">
+            <a href="#">Settings</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit">Logout</button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -48,7 +70,7 @@
       <div class="kpi-section">KPIs</div>
 
       <!-- Main Graph -->
-      <div class="main-graph small">Main Graph Container</div>
+      <div class="main-graph">Main Graph Container</div>
 
       <!-- Bottom two cards -->
       <div class="bottom-panels">
