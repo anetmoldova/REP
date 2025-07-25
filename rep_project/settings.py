@@ -77,8 +77,22 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    # Analytics database
+    'analytics': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'main_db',
+        'USER': 'main_user',
+        'PASSWORD': 'main_pass',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+"""
+after finishing the database setup, run the following commands:
+python manage.py migrate --database=default
+python manage.py migrate --database=analytics
+"""
 
 
 # Password validation

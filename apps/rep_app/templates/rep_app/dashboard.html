@@ -7,7 +7,6 @@
   <title>Dashboard - REP</title>
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <script defer>
-    // Sidebar toggle script
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById("sidebarToggle");
       const sidebar = document.querySelector(".sidebar");
@@ -15,14 +14,12 @@
         sidebar.classList.toggle("collapsed");
       });
 
-      // Dropdown toggle
       const profilePic = document.getElementById("profilePic");
       const dropdown = document.getElementById("dropdownMenu");
       profilePic.addEventListener("click", () => {
         dropdown.classList.toggle("show");
       });
 
-      // Close dropdown on outside click
       document.addEventListener("click", function (e) {
         const profile = document.getElementById("profileDropdown");
         if (!profile.contains(e.target)) {
@@ -38,16 +35,26 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <button id="sidebarToggle" class="toggle-btn">☰</button>
-      <div class="logo">REP</div>
+
+      <div class="logo">
+        <span class="logo-text">Sidebar</span>
+      </div>
+
       <nav class="nav">
-        <a href="#" class="nav-item active">Overview</a>
+        <a href="#" class="nav-item active" title="Overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Overview</span>
+        </a>
+        <!-- Add more nav-items here -->
       </nav>
     </aside>
 
     <!-- Main content -->
     <div class="main">
+      <div class="top-bar">
+        <div class="dashboard-title">REP Dashboard</div>
+      </div>
 
-      <!-- User profile -->
       <div class="top-profile">
         <div class="spacer"></div>
         <div class="profile" id="profileDropdown">
@@ -57,27 +64,20 @@
             <a href="#">Settings</a>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
-              <button type="submit">Logout</button>
+              <button type="submit" class="dropdown-btn logout-btn">Logout</button>
             </form>
           </div>
         </div>
       </div>
 
-      <!-- Filters -->
       <div class="filters-bar">Filters</div>
-
-      <!-- KPI Section -->
       <div class="kpi-section">KPIs</div>
-
-      <!-- Main Graph -->
       <div class="main-graph">Main Graph Container</div>
 
-      <!-- Bottom two cards -->
       <div class="bottom-panels">
         <div class="card">Bottom Left</div>
         <div class="card">Bottom Right</div>
       </div>
-
     </div>
   </div>
 </body>

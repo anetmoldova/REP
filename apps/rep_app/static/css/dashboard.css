@@ -31,11 +31,11 @@ body {
 .sidebar {
   width: 200px;
   background: var(--color-white);
-  padding: 2rem 1rem;
+  padding: 1.2rem 1rem;
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  align-items: center;
   transition: width 0.3s ease;
   min-width: 60px;
   position: relative;
@@ -56,41 +56,72 @@ body {
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
 }
 
-/* Collapsed sidebar */
-.sidebar.collapsed {
-  width: 60px;
-}
-
-.sidebar.collapsed .logo,
-.sidebar.collapsed .nav-item {
-  display: none;
-}
-
 .logo {
-  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  font-size: 1.3rem;
   font-weight: 600;
   color: var(--color-primary);
+  width: 100%;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1rem;
+  margin-top: 2rem; /* optional spacing */
+  margin-bottom: 0;
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   text-decoration: none;
   color: var(--color-muted);
   font-size: 0.95rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
   transition: background 0.2s;
+  height: 44px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
 }
 
 .nav-item:hover,
 .nav-item.active {
   background: var(--color-secondary);
   color: var(--color-white);
+}
+
+/* Collapsed sidebar */
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .logo-text {
+  display: none;
+}
+
+.sidebar.collapsed .nav-text {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  padding: 0;
+  margin: 0 auto;
 }
 
 /* Main content */
@@ -103,73 +134,25 @@ body {
   overflow-y: auto;
 }
 
-/* Top profile bar */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
 .top-profile {
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
 
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.profile img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.username {
-  font-size: 0.95rem;
-  color: var(--color-muted);
-}
-
-/* Filters bar */
-.filters-bar {
-  background: var(--color-white);
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-/* KPI Section */
-.kpi-section {
-  background: var(--color-white);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-/* Graph */
-.main-graph {
-  background: var(--color-white);
-  padding: 2rem;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  height: 200px;
-}
-
-/* Bottom grid */
-.bottom-panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.card {
-  background: var(--color-white);
-  padding: 1.5rem;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  height: 200px;
-}
-/* Profile Dropdown (fixed styling) */
 .profile {
   position: relative;
   display: flex;
@@ -184,6 +167,11 @@ body {
   object-fit: cover;
   cursor: pointer;
   border: 2px solid var(--color-primary);
+}
+
+.username {
+  font-size: 0.95rem;
+  color: var(--color-muted);
 }
 
 .dropdown {
@@ -221,4 +209,50 @@ body {
 .dropdown button.dropdown-btn:hover {
   background-color: var(--color-soft);
   color: var(--color-primary);
+}
+
+.logout-btn {
+  all: unset;
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+}
+
+.logout-btn:hover {
+  background-color: var(--color-soft);
+  color: #5a4760;
+}
+
+/* Layout content */
+.filters-bar,
+.kpi-section,
+.main-graph,
+.card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  font-weight: 500;
+}
+
+.main-graph {
+  padding: 2rem;
+  border-radius: 10px;
+  height: 200px;
+}
+
+.bottom-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.card {
+  height: 200px;
 }
