@@ -9,15 +9,15 @@
 </head>
 <body>
   <div class="login-container">
-    <h1>Log In</h1>
+  <h1>Log In</h1>
 
-    {% if messages %}
-      <ul class="auth-messages">
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+  {% if messages %}
+    <ul class="auth-messages">
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
 
     <form method="post">
       {% csrf_token %}

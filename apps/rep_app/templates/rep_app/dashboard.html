@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - REP</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <script defer>
+    // Sidebar toggle script
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggleBtn = document.getElementById("sidebarToggle");
+      const sidebar = document.querySelector(".sidebar");
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button id="sidebarToggle" class="toggle-btn">☰</button>
+      <div class="logo">REP</div>
+      <nav class="nav">
+        <a href="#" class="nav-item active">Overview</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- User profile -->
+      <div class="top-profile">
+        <div class="spacer"></div>
+        <div class="profile">
+          <span class="username">John Doe</span>
+          <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" />
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">Filters</div>
+
+      <!-- KPI Section -->
+      <div class="kpi-section">KPIs</div>
+
+      <!-- Main Graph -->
+      <div class="main-graph small">Main Graph Container</div>
+
+      <!-- Bottom two cards -->
+      <div class="bottom-panels">
+        <div class="card">Bottom Left</div>
+        <div class="card">Bottom Right</div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -16,13 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from apps.rep_app.views import landing, signup, login_page
+from apps.rep_app.views import landing, signup, login_page, dashboard
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.views import LogoutView
+from django.contrib import messages
+from django.shortcuts import redirect
 
+class CustomLogoutView(LogoutView):
+    def dispatch(self, request, *args, **kwargs):
+        messages.success(request, "You have successfully logged out.")
+        return super().dispatch(request, *args, **kwargs)
+    
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', landing, name='landing'),
     path('signup/', signup, name='signup'),
     path('login/', login_page, name='login'),
+    path('dashboard/', dashboard, name='dashboard'),
+    path('logout/', CustomLogoutView.as_view(), name='logout'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
