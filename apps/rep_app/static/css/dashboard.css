@@ -1,12 +1,12 @@
 :root {
-  --color-soft: #F0F0F0;
+  --color-soft: #F9FAFB;
   --color-primary: #896F8C;
   --color-secondary: #2AB3A6;
   --color-accent: #FF7E5F;
-  --color-border: #E0E0E0;
-  --color-muted: #666666;
+  --color-border: #E5E7EB;
+  --color-muted: #6B7280;
   --color-white: #FFFFFF;
-  --color-charcoal: #333333;
+  --color-charcoal: #111827;
 }
 
 * {
@@ -39,6 +39,7 @@ body {
   transition: width 0.3s ease;
   min-width: 60px;
   position: relative;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
 }
 
 .toggle-btn {
@@ -72,7 +73,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  margin-top: 2rem; /* optional spacing */
+  margin-top: 2rem;
   margin-bottom: 0;
 }
 
@@ -85,7 +86,7 @@ body {
   font-size: 0.95rem;
   padding: 0.5rem 0.8rem;
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s;
   height: 44px;
   width: 100%;
   justify-content: flex-start;
@@ -99,6 +100,7 @@ body {
 .nav-item.active {
   background: var(--color-secondary);
   color: var(--color-white);
+  box-shadow: 0 2px 6px rgba(42, 179, 166, 0.2);
 }
 
 /* Collapsed sidebar */
@@ -106,10 +108,7 @@ body {
   width: 60px;
 }
 
-.sidebar.collapsed .logo-text {
-  display: none;
-}
-
+.sidebar.collapsed .logo-text,
 .sidebar.collapsed .nav-text {
   display: none;
 }
@@ -130,7 +129,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 2rem;
-  gap: 1.5rem;
+  gap: 1rem;
   overflow-y: auto;
 }
 
@@ -138,19 +137,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .dashboard-title {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--color-primary);
-}
-
-.top-profile {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
 }
 
 .profile {
@@ -229,22 +223,22 @@ body {
   color: #5a4760;
 }
 
-/* Layout content */
+/* Section cards */
 .filters-bar,
 .kpi-section,
 .main-graph,
 .card {
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 1rem;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
   font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .main-graph {
   padding: 2rem;
-  border-radius: 10px;
-  height: 200px;
+  height: 220px;
 }
 
 .bottom-panels {

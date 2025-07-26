@@ -45,7 +45,10 @@
           <span class="nav-icon">📊</span>
           <span class="nav-text">Overview</span>
         </a>
-        <!-- Add more nav-items here -->
+        <a href="#" class="nav-item" title="ChatBot">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-text">ChatBot</span>
+        </a>
       </nav>
     </aside>
 
@@ -53,10 +56,6 @@
     <div class="main">
       <div class="top-bar">
         <div class="dashboard-title">REP Dashboard</div>
-      </div>
-
-      <div class="top-profile">
-        <div class="spacer"></div>
         <div class="profile" id="profileDropdown">
           <span class="username">Welcome, {{ request.user.username }}!</span>
           <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" id="profilePic" />
