@@ -10,8 +10,15 @@
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById("sidebarToggle");
       const sidebar = document.querySelector(".sidebar");
+
+      // Restore sidebar state
+      if (localStorage.getItem("sidebarCollapsed") === "true") {
+        sidebar.classList.add("collapsed");
+      }
+
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.toggle("collapsed");
+        localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
       });
 
       const profilePic = document.getElementById("profilePic");
@@ -31,17 +38,14 @@
 </head>
 <body>
   <div class="layout">
-
     <!-- Sidebar -->
     <aside class="sidebar">
       <button id="sidebarToggle" class="toggle-btn">☰</button>
-
       <div class="logo">
         <span class="logo-text">Sidebar</span>
       </div>
-
       <nav class="nav">
-        <a href="#" class="nav-item active" title="Overview">
+        <a href="{% url 'dashboard' %}" class="nav-item active" title="Overview">
           <span class="nav-icon">📊</span>
           <span class="nav-text">Overview</span>
         </a>

@@ -6,12 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ChatBot - REP</title>
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
   <script defer>
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById("sidebarToggle");
       const sidebar = document.querySelector(".sidebar");
+
+      if (localStorage.getItem("sidebarCollapsed") === "true") {
+        sidebar.classList.add("collapsed");
+      }
+
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.toggle("collapsed");
+        localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
       });
 
       const profilePic = document.getElementById("profilePic");
@@ -27,50 +34,86 @@
         }
       });
 
-      // Simple fake bot response (for demo)
       const chatForm = document.getElementById("chatForm");
-      chatForm.addEventListener("submit", function (e) {
+      const chatInput = document.getElementById("chatInput");
+      const chatBox = document.getElementById("chatBox");
+
+      chatForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        const input = document.getElementById("chatInput");
-        const message = input.value.trim();
-        if (message) {
-          const chatBox = document.getElementById("chatBox");
-          chatBox.innerHTML += `<div class="message user-msg">${message}</div>`;
-          setTimeout(() => {
-            chatBox.innerHTML += `<div class="message bot-msg">This is a sample bot response to: "${message}"</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-          }, 500);
-          input.value = "";
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        chatInput.disabled = true;
+
+        const userMessage = document.createElement("div");
+        userMessage.className = "message user-msg";
+        userMessage.innerHTML = `<div class="msg-inner">${message}</div>`;
+        chatBox.appendChild(userMessage);
+
+        const typingIndicator = document.createElement("div");
+        typingIndicator.className = "message bot-msg typing";
+        typingIndicator.innerHTML = `<div class="msg-inner">...</div>`;
+        chatBox.appendChild(typingIndicator);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        chatInput.value = "";
+
+        try {
+          const response = await fetch("{% url 'chat_api' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: JSON.stringify({ message: message }),
+          });
+
+          const data = await response.json();
+          typingIndicator.remove();
+
+          const botMessage = document.createElement("div");
+          botMessage.className = "message bot-msg";
+          botMessage.innerHTML = `<div class="msg-inner">${data.response}</div>`;
+          chatBox.appendChild(botMessage);
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (error) {
+          typingIndicator.remove();
+          const botError = document.createElement("div");
+          botError.className = "message bot-msg error";
+          botError.innerHTML = `<div class="msg-inner">Error: Failed to get a response.</div>`;
+          chatBox.appendChild(botError);
+          chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+        chatInput.disabled = false;
+        chatInput.focus();
       });
     });
   </script>
 </head>
 <body>
   <div class="layout">
-
-    <!-- Sidebar -->
+    <!-- Sidebar navigation -->
     <aside class="sidebar">
       <button id="sidebarToggle" class="toggle-btn">☰</button>
-
       <div class="logo">
         <span class="logo-text">Sidebar</span>
       </div>
-
       <nav class="nav">
         <a href="{% url 'dashboard' %}" class="nav-item" title="Overview">
           <span class="nav-icon">📊</span>
           <span class="nav-text">Overview</span>
         </a>
-        <a href="#" class="nav-item active" title="ChatBot">
+        <a href="{% url 'chatbot' %}" class="nav-item active" title="ChatBot">
           <span class="nav-icon">🤖</span>
           <span class="nav-text">ChatBot</span>
         </a>
       </nav>
     </aside>
 
-    <!-- Main content -->
     <div class="main">
+      <!-- Top bar -->
       <div class="top-bar">
         <div class="dashboard-title">REP ChatBot</div>
         <div class="profile" id="profileDropdown">
@@ -86,14 +129,30 @@
         </div>
       </div>
 
-      <div class="chat-container">
-        <div class="chat-box" id="chatBox">
-          <!-- Messages will be added here -->
+      <!-- Main chat layout with sidebar -->
+      <div class="chat-layout">
+        <div class="chat-main">
+          <div class="chat-container">
+            <div class="chat-box" id="chatBox"></div>
+            <form class="chat-form" id="chatForm">
+              <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
+              <button type="submit">Send</button>
+            </form>
+          </div>
         </div>
-        <form class="chat-form" id="chatForm">
-          <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
-          <button type="submit">Send</button>
-        </form>
+
+        <aside class="chat-sidebar">
+          <h3>Recent Conversations</h3>
+          <ul>
+            {% if request.session.conversation_log %}
+              {% for convo in request.session.conversation_log %}
+                <li title="{{ convo.summary }}">{{ convo.title }}</li>
+              {% endfor %}
+            {% else %}
+              <li>No recent conversations yet.</li>
+            {% endif %}
+          </ul>
+        </aside>
       </div>
     </div>
   </div>
