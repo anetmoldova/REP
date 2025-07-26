@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - REP</title>
+  <title>ChatBot - REP</title>
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <script defer>
     document.addEventListener("DOMContentLoaded", function () {
@@ -26,6 +26,23 @@
           dropdown.classList.remove("show");
         }
       });
+
+      // Simple fake bot response (for demo)
+      const chatForm = document.getElementById("chatForm");
+      chatForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+        if (message) {
+          const chatBox = document.getElementById("chatBox");
+          chatBox.innerHTML += `<div class="message user-msg">${message}</div>`;
+          setTimeout(() => {
+            chatBox.innerHTML += `<div class="message bot-msg">This is a sample bot response to: "${message}"</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }, 500);
+          input.value = "";
+        }
+      });
     });
   </script>
 </head>
@@ -41,11 +58,11 @@
       </div>
 
       <nav class="nav">
-        <a href="#" class="nav-item active" title="Overview">
+        <a href="{% url 'dashboard' %}" class="nav-item" title="Overview">
           <span class="nav-icon">📊</span>
           <span class="nav-text">Overview</span>
         </a>
-        <a href="{% url 'chatbot' %}" class="nav-item" title="ChatBot">
+        <a href="#" class="nav-item active" title="ChatBot">
           <span class="nav-icon">🤖</span>
           <span class="nav-text">ChatBot</span>
         </a>
@@ -55,7 +72,7 @@
     <!-- Main content -->
     <div class="main">
       <div class="top-bar">
-        <div class="dashboard-title">REP Dashboard</div>
+        <div class="dashboard-title">REP ChatBot</div>
         <div class="profile" id="profileDropdown">
           <span class="username">Welcome, {{ request.user.username }}!</span>
           <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" id="profilePic" />
@@ -69,13 +86,14 @@
         </div>
       </div>
 
-      <div class="filters-bar">Filters</div>
-      <div class="kpi-section">KPIs</div>
-      <div class="main-graph">Main Graph Container</div>
-
-      <div class="bottom-panels">
-        <div class="card">Bottom Left</div>
-        <div class="card">Bottom Right</div>
+      <div class="chat-container">
+        <div class="chat-box" id="chatBox">
+          <!-- Messages will be added here -->
+        </div>
+        <form class="chat-form" id="chatForm">
+          <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
+          <button type="submit">Send</button>
+        </form>
       </div>
     </div>
   </div>

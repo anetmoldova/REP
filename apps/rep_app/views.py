@@ -41,3 +41,7 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     return render(request, 'rep_app/dashboard.html')
+
+@login_required
+def chatbot(request):
+    return render(request, 'rep_app/chatbot.html')
