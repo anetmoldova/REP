@@ -6,3 +6,4 @@ pillow
 langchain-openai
 langchain-community
 langgraph
+psycopg2

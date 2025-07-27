@@ -11,6 +11,11 @@
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById("sidebarToggle");
       const sidebar = document.querySelector(".sidebar");
+      const chatForm = document.getElementById("chatForm");
+      const chatInput = document.getElementById("chatInput");
+      const chatBox = document.getElementById("chatBox");
+      const sessionSelect = document.getElementById("sessionSelect");
+      const newSessionBtn = document.getElementById("newSessionBtn");
 
       if (localStorage.getItem("sidebarCollapsed") === "true") {
         sidebar.classList.add("collapsed");
@@ -34,14 +39,32 @@
         }
       });
 
-      const chatForm = document.getElementById("chatForm");
-      const chatInput = document.getElementById("chatInput");
-      const chatBox = document.getElementById("chatBox");
+      newSessionBtn.addEventListener("click", async () => {
+        try {
+          const response = await fetch("{% url 'start_session' %}", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+          });
+          const data = await response.json();
+          const option = document.createElement("option");
+          option.value = data.session_id;
+          option.textContent = `Session ${data.session_id} - just now`;
+          option.selected = true;
+          sessionSelect.appendChild(option);
+          sessionSelect.value = data.session_id;
+          chatBox.innerHTML = ""; // Clear chat
+        } catch (err) {
+          alert("Failed to create a session.");
+        }
+      });
 
       chatForm.addEventListener("submit", async function (e) {
         e.preventDefault();
         const message = chatInput.value.trim();
-        if (!message) return;
+        const sessionId = sessionSelect.value;
+        if (!message || !sessionId) return;
 
         chatInput.disabled = true;
 
@@ -65,16 +88,19 @@
               "Content-Type": "application/json",
               "X-CSRFToken": "{{ csrf_token }}",
             },
-            body: JSON.stringify({ message: message }),
+            body: JSON.stringify({ message: message, session_id: sessionId }),
           });
 
           const data = await response.json();
           typingIndicator.remove();
 
-          const botMessage = document.createElement("div");
-          botMessage.className = "message bot-msg";
-          botMessage.innerHTML = `<div class="msg-inner">${data.response}</div>`;
-          chatBox.appendChild(botMessage);
+          chatBox.innerHTML = "";
+          data.history.forEach((msg) => {
+            const msgEl = document.createElement("div");
+            msgEl.className = `message ${msg.role === 'user' ? 'user-msg' : 'bot-msg'}`;
+            msgEl.innerHTML = `<div class="msg-inner">${msg.content}</div>`;
+            chatBox.appendChild(msgEl);
+          });
           chatBox.scrollTop = chatBox.scrollHeight;
 
         } catch (error) {
@@ -94,7 +120,6 @@
 </head>
 <body>
   <div class="layout">
-    <!-- Sidebar navigation -->
     <aside class="sidebar">
       <button id="sidebarToggle" class="toggle-btn">☰</button>
       <div class="logo">
@@ -113,7 +138,6 @@
     </aside>
 
     <div class="main">
-      <!-- Top bar -->
       <div class="top-bar">
         <div class="dashboard-title">REP ChatBot</div>
         <div class="profile" id="profileDropdown">
@@ -129,10 +153,20 @@
         </div>
       </div>
 
-      <!-- Main chat layout with sidebar -->
       <div class="chat-layout">
         <div class="chat-main">
           <div class="chat-container">
+            <div class="session-select">
+              <label for="sessionSelect">Select Session:</label>
+              <button type="button" id="newSessionBtn" class="new-session-btn">➕ New Session</button>
+              <select id="sessionSelect" required>
+                {% for session in sessions %}
+                  <option value="{{ session.id }}" {% if session.id == active_session_id %}selected{% endif %}>
+                    Session {{ session.id }} - {{ session.created_at|date:"Y-m-d H:i" }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
             <div class="chat-box" id="chatBox"></div>
             <form class="chat-form" id="chatForm">
               <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
@@ -144,9 +178,9 @@
         <aside class="chat-sidebar">
           <h3>Recent Conversations</h3>
           <ul>
-            {% if request.session.conversation_log %}
-              {% for convo in request.session.conversation_log %}
-                <li title="{{ convo.summary }}">{{ convo.title }}</li>
+            {% if sessions %}
+              {% for session in sessions %}
+                <li title="{{ session.summary|default:"No summary" }}">Session {{ session.id }}</li>
               {% endfor %}
             {% else %}
               <li>No recent conversations yet.</li>

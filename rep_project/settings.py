@@ -81,11 +81,11 @@ DATABASES = {
     # Analytics database
     'analytics': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'main_db',
-        'USER': 'main_user',
-        'PASSWORD': 'main_pass',
+        'NAME': 'rep_db',
+        'USER': 'vanhieuvu',
+        'PASSWORD': 'nanuk§2',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '4321',
     }
 }
 """
@@ -94,6 +94,7 @@ python manage.py migrate --database=default
 python manage.py migrate --database=analytics
 """
 
+DATABASE_ROUTERS = ['apps.rep_app.utils.db_router.AnalyticsRouter']
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
