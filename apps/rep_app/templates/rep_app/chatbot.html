@@ -72,14 +72,15 @@
         userMessage.className = "message user-msg";
         userMessage.innerHTML = `<div class="msg-inner">${message}</div>`;
         chatBox.appendChild(userMessage);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        chatInput.value = "";
 
         const typingIndicator = document.createElement("div");
         typingIndicator.className = "message bot-msg typing";
         typingIndicator.innerHTML = `<div class="msg-inner">...</div>`;
         chatBox.appendChild(typingIndicator);
         chatBox.scrollTop = chatBox.scrollHeight;
-
-        chatInput.value = "";
 
         try {
           const response = await fetch("{% url 'chat_api' %}", {
@@ -94,13 +95,10 @@
           const data = await response.json();
           typingIndicator.remove();
 
-          chatBox.innerHTML = "";
-          data.history.forEach((msg) => {
-            const msgEl = document.createElement("div");
-            msgEl.className = `message ${msg.role === 'user' ? 'user-msg' : 'bot-msg'}`;
-            msgEl.innerHTML = `<div class="msg-inner">${msg.content}</div>`;
-            chatBox.appendChild(msgEl);
-          });
+          const botMessage = document.createElement("div");
+          botMessage.className = "message bot-msg";
+          botMessage.innerHTML = `<div class="msg-inner">${data.response}</div>`;
+          chatBox.appendChild(botMessage);
           chatBox.scrollTop = chatBox.scrollHeight;
 
         } catch (error) {

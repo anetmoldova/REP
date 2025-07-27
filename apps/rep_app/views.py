@@ -11,8 +11,9 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains.summarize import load_summarize_chain
 from langchain.docstore.document import Document
 import json
-from .models import ChatSession
 from django.views.decorators.http import require_POST
+from .models import ChatSession, ChatMessage
+
 
 def landing(request):
     image_filename = 'rep_app/preview_landing_page_v2.png'  # You can change this dynamically
@@ -69,7 +70,7 @@ def chatbot(request):
 def chat_api(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        user_message = data.get("message", "")
+        user_message = data.get("message")
         session_id = data.get("session_id")
 
         try:
@@ -77,10 +78,20 @@ def chat_api(request):
         except ChatSession.DoesNotExist:
             return JsonResponse({"error": "Invalid session"}, status=400)
 
-        full_history = run_agent(user_message, session)
-        bot_reply = full_history[-1].content  # ✅ Now this works
+        # Run bot + store messages
+        messages = run_agent(user_message, session)
+        bot_reply = messages[-1].content
 
-        return JsonResponse({"response": bot_reply})
+        # Prepare full history for frontend
+        formatted = []
+        for msg in messages:
+            role = "user" if isinstance(msg, HumanMessage) else "ai"
+            formatted.append({"role": role, "content": msg.content})
+
+        return JsonResponse({
+            "response": bot_reply,
+            "history": formatted
+        })
 
     return JsonResponse({"error": "Invalid request"}, status=400)
 
