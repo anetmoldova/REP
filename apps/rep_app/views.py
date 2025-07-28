@@ -19,7 +19,6 @@ def landing(request):
     return render(request, 'rep_app/landing.html')
 
 def signup(request):
-    # Add signup logic or render template
     return render(request, 'rep_app/signup.html')
 
 def login_page(request):
@@ -61,30 +60,42 @@ def start_session(request):
 @login_required
 def chat_api(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        message = data.get('message')
-        session_id = data.get('session_id')
-        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        try:
+            data = json.loads(request.body)
+            message = data.get('message')
+            session_id = data.get('session_id')
+            session = get_object_or_404(ChatSession, id=session_id, user=request.user)
 
-        # Save user message
-        ChatMessage.objects.create(session=session, is_user=True, content=message)
+            ChatMessage.objects.create(session=session, is_user=True, content=message)
 
-        # Construct prompt
-        history = list(session.messages.order_by('timestamp'))[-10:]
-        prompt = "\n".join([
-            f"User: {m.content}" if m.is_user else f"Bot: {m.content}"
-            for m in history
-        ]) + f"\nUser: {message}"
+            history = list(session.messages.order_by('timestamp'))[-10:]
+            prompt = "\n".join([
+                f"User: {m.content}" if m.is_user else f"Bot: {m.content}"
+                for m in history
+            ]) + f"\nUser: {message}"
 
-        # Get response from LLM
-        response = llm([HumanMessage(content=prompt)]).content
-        ChatMessage.objects.create(session=session, is_user=False, content=response)
+            # LLM response
+            response = llm([HumanMessage(content=prompt)]).content
+            ChatMessage.objects.create(session=session, is_user=False, content=response)
 
-        # Update summary
-        session.summary = message[:50] + ('...' if len(message) > 50 else '')
-        session.save()
+            # Summarize the session
+            try:
+                summary_prompt = (
+                    "Summarize the following chat in one sentence for use as a session label:\n\n"
+                    + prompt
+                )
+                summary_result = llm([HumanMessage(content=summary_prompt)]).content
+                session.summary = summary_result[:200]
+            except Exception as summary_error:
+                session.summary = message[:50] + ('...' if len(message) > 50 else '')
 
-        return JsonResponse({'response': response})
+            session.save()
+            return JsonResponse({'response': response})
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'response': 'An error occurred. Please try again.'}, status=500)
 
 @login_required
 def get_session_summary(request, session_id):
