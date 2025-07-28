@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from apps.rep_app.views import landing, signup, login_page, dashboard, chatbot, chat_api, start_new_session
+from apps.rep_app.views import landing, signup, login_page, dashboard, chat_api, chatbot_view, start_session, chat_api, get_session_summary
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
@@ -35,7 +35,8 @@ urlpatterns = [
     path('login/', login_page, name='login'),
     path('dashboard/', dashboard, name='dashboard'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
-    path('chatbot/', chatbot, name='chatbot'),
-    path('chat-api/', chat_api, name='chat_api'),
-    path("start-session/", start_new_session, name="start_session"),
+    path('chatbot/', chatbot_view, name='chatbot'),  # ✅ keep only this
+    path('chat/start/', start_session, name='start_session'),  # ✅ use this one
+    path('chat/api/', chat_api, name='chat_api'),
+    path('chat/session-summary/<int:session_id>/', get_session_summary, name='get_session_summary'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

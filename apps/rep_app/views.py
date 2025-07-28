@@ -1,109 +1,92 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+# views.py
+from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
-from .utils.langchain_bot import llm, run_agent
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain.chains.summarize import load_summarize_chain
-from langchain.docstore.document import Document
-import json
-from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.contrib.auth.forms import AuthenticationForm
 from .models import ChatSession, ChatMessage
+import json
+from langchain.schema import HumanMessage
+from langchain_openai import ChatOpenAI
 
+llm = ChatOpenAI(temperature=0.5)
 
+# === PUBLIC PAGES ===
 def landing(request):
-    image_filename = 'rep_app/preview_landing_page_v2.png'  # You can change this dynamically
-    return render(request, 'rep_app/landing.html', {'landing_image': image_filename})
+    return render(request, 'rep_app/landing.html')
+
+def signup(request):
+    # Add signup logic or render template
+    return render(request, 'rep_app/signup.html')
 
 def login_page(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
             login(request, user)
             return redirect('dashboard')
         else:
-            from django.contrib import messages
-            messages.error(request, 'Invalid username or password.')
+            messages.error(request, "Invalid credentials.")
     return render(request, 'rep_app/login.html')
 
-def signup(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists')
-        else:
-            User.objects.create_user(username=username, email=email, password=password)
-            return redirect('login')
-    return render(request, 'rep_app/signup.html')
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
+# === MAIN APP PAGES ===
 @login_required
 def dashboard(request):
     return render(request, 'rep_app/dashboard.html')
 
 @login_required
-def chatbot(request):
-    # Always create a new session when loading the chatbot
-    new_session = ChatSession.objects.create(user_id=request.user.username)
-
-    # Get all past sessions for this user (incl. the new one)
-    sessions = ChatSession.objects.filter(user_id=request.user.username).order_by('-created_at')
-
+def chatbot_view(request):
+    sessions = ChatSession.objects.filter(user=request.user).order_by('-created_at')[:10]
     return render(request, 'rep_app/chatbot.html', {
-        "sessions": sessions,
-        "active_session_id": new_session.id,  # Pass to template
+        'sessions': sessions,
+        'active_session_id': None,
     })
+
+# === CHATBOT ENDPOINTS ===
+@csrf_exempt
+@login_required
+def start_session(request):
+    if request.method == 'POST':
+        session = ChatSession.objects.create(user=request.user, summary="New conversation")
+        return JsonResponse({
+            'session_id': session.id,
+            'summary': session.summary,
+        })
 
 @csrf_exempt
 @login_required
 def chat_api(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         data = json.loads(request.body)
-        user_message = data.get("message")
-        session_id = data.get("session_id")
+        message = data.get('message')
+        session_id = data.get('session_id')
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
 
-        try:
-            session = ChatSession.objects.get(id=session_id, user_id=request.user.username)
-        except ChatSession.DoesNotExist:
-            return JsonResponse({"error": "Invalid session"}, status=400)
+        # Save user message
+        ChatMessage.objects.create(session=session, is_user=True, content=message)
 
-        # Run bot + store messages
-        messages = run_agent(user_message, session)
-        bot_reply = messages[-1].content
+        # Construct prompt
+        history = list(session.messages.order_by('timestamp'))[-10:]
+        prompt = "\n".join([
+            f"User: {m.content}" if m.is_user else f"Bot: {m.content}"
+            for m in history
+        ]) + f"\nUser: {message}"
 
-        # Prepare full history for frontend
-        formatted = []
-        for msg in messages:
-            role = "user" if isinstance(msg, HumanMessage) else "ai"
-            formatted.append({"role": role, "content": msg.content})
+        # Get response from LLM
+        response = llm([HumanMessage(content=prompt)]).content
+        ChatMessage.objects.create(session=session, is_user=False, content=response)
 
-        return JsonResponse({
-            "response": bot_reply,
-            "history": formatted
-        })
+        # Update summary
+        session.summary = message[:50] + ('...' if len(message) > 50 else '')
+        session.save()
 
-    return JsonResponse({"error": "Invalid request"}, status=400)
+        return JsonResponse({'response': response})
 
-def summarize_messages(messages):
-    text = "\n".join([f"{m.type.upper()}: {m.content}" for m in messages])
-    chain = load_summarize_chain(llm, chain_type="stuff")
-    summary = chain.invoke([Document(page_content=text)])
-    return summary
-
-@csrf_exempt
-@require_POST
 @login_required
-def start_new_session(request):
-    session = ChatSession.objects.create(user_id=request.user.username)
-    return JsonResponse({"session_id": session.id})
+def get_session_summary(request, session_id):
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    return JsonResponse({'summary': session.summary or ''})
