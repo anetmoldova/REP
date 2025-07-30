@@ -11,6 +11,8 @@ from .models import ChatSession, ChatMessage
 import json
 from langchain.schema import HumanMessage
 from langchain_openai import ChatOpenAI
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 llm = ChatOpenAI(temperature=0.5)
 
@@ -101,3 +103,12 @@ def chat_api(request):
 def get_session_summary(request, session_id):
     session = get_object_or_404(ChatSession, id=session_id, user=request.user)
     return JsonResponse({'summary': session.summary or ''})
+
+@require_http_methods(["DELETE"])
+def delete_session(request, session_id):
+    try:
+        session = ChatSession.objects.get(pk=session_id, user=request.user)
+        session.delete()
+        return JsonResponse({"status": "deleted"})
+    except ChatSession.DoesNotExist:
+        return JsonResponse({"error": "Session not found"}, status=404)

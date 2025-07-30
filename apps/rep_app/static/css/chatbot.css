@@ -9,6 +9,15 @@
   padding: 1rem;
 }
 
+.chat-container.disabled {
+  opacity: 0.5;
+}
+
+.chat-container.disabled .chat-form,
+.chat-container.disabled .chat-box {
+  pointer-events: none;
+}
+
 .chat-box {
   flex: 1;
   overflow-y: auto;
@@ -169,4 +178,38 @@
 
 .big-new-session:hover {
   color: #6f5a73;
+}
+
+.chat-box.empty {
+  background-color: #d8d5d5;
+}
+
+.chat-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #888;
+  font-size: 1rem;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-session {
+  color: #999;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.2s ease;
+}
+
+.delete-session:hover {
+  color: var(--color-error, #e53935);
 }

@@ -52,6 +52,13 @@
       function setChatEnabled(enabled) {
         chatInput.disabled = !enabled;
         chatForm.querySelector("button").disabled = !enabled;
+
+        const container = document.querySelector(".chat-container");
+        if (!enabled) {
+          container.classList.add("disabled");
+        } else {
+          container.classList.remove("disabled");
+        }
       }
 
       setChatEnabled(false);
@@ -59,16 +66,111 @@
       sessionSelect.addEventListener("change", async () => {
         const sessionId = sessionSelect.value;
         chatBox.innerHTML = "";
-        if (!sessionId) return setChatEnabled(false);
+
+        if (!sessionId) {
+          chatBox.classList.add("empty");
+          chatBox.innerHTML = `<div class="chat-placeholder">Please start a new conversation or select a past session.</div>`;
+          setChatEnabled(false);
+          return;
+        }
+
         try {
           const res = await fetch(`/chat/session-summary/${sessionId}/`);
           const data = await res.json();
           injectSummaryText(data.summary);
+          chatBox.classList.remove("empty");
           setChatEnabled(true);
         } catch {
-          injectSummaryText("(Failed to load session summary)");
+          chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
+          chatBox.classList.add("empty");
+          setChatEnabled(false);
         }
       });
+      sessionList.addEventListener("click", async (e) => {
+        const target = e.target.closest(".session-item");
+        if (!target) return;
+
+        const sessionId = target.dataset.sessionId;
+        if (!sessionId) return;
+
+        // Set dropdown to match
+        sessionSelect.value = sessionId;
+        [...sessionList.children].forEach(li => li.classList.remove("active"));
+        target.classList.add("active");
+
+        chatBox.innerHTML = "";
+
+        try {
+          const res = await fetch(`/chat/session-summary/${sessionId}/`);
+          const data = await res.json();
+          injectSummaryText(data.summary);
+          chatBox.classList.remove("empty");
+          setChatEnabled(true);
+        } catch {
+          chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
+          chatBox.classList.add("empty");
+          setChatEnabled(false);
+        }
+      });
+
+  sessionList.addEventListener("click", async (e) => {
+    const deleteBtn = e.target.closest(".delete-session");
+    if (deleteBtn) {
+      const item = deleteBtn.closest(".session-item");
+      const sessionId = item.dataset.sessionId;
+
+      if (!sessionId) return;
+      if (!confirm("Delete this session?")) return;
+
+      try {
+        const res = await fetch(`/chat/delete-session/${sessionId}/`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed");
+
+        item.remove();
+
+        // Optional: clear if the deleted session was selected
+        if (sessionSelect.value === sessionId) {
+          sessionSelect.value = "";
+          chatBox.classList.add("empty");
+          chatBox.innerHTML = `<div class="chat-placeholder">Please start a new conversation or select a past session.</div>`;
+          setChatEnabled(false);
+        }
+
+        // Also remove from dropdown
+        const opt = sessionSelect.querySelector(`option[value="${sessionId}"]`);
+        if (opt) opt.remove();
+      } catch {
+        alert("Failed to delete session.");
+      }
+
+      return; // Skip the rest if it was a delete click
+    }
+
+  // Existing session selection logic
+  const target = e.target.closest(".session-item");
+  if (!target) return;
+  const sessionId = target.dataset.sessionId;
+  if (!sessionId) return;
+
+  sessionSelect.value = sessionId;
+  [...sessionList.children].forEach(li => li.classList.remove("active"));
+  target.classList.add("active");
+
+  chatBox.innerHTML = "";
+
+  try {
+    const res = await fetch(`/chat/session-summary/${sessionId}/`);
+    const data = await res.json();
+    injectSummaryText(data.summary);
+    chatBox.classList.remove("empty");
+    setChatEnabled(true);
+  } catch {
+    chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
+    chatBox.classList.add("empty");
+    setChatEnabled(false);
+  }
+});
+
 
       newSessionTopBtn.addEventListener("click", () => newSessionBtn.click());
 
@@ -208,7 +310,13 @@
               <button id="newSessionTopBtn" class="big-new-session">➕</button>
             </div>
 
-            <div class="chat-box" id="chatBox"></div>
+            <div class="chat-box{% if initial_prompt %} empty{% endif %}" id="chatBox">
+              {% if initial_prompt %}
+                <div class="chat-placeholder">
+                  Please start a new conversation or select a past session.
+                </div>
+              {% endif %}
+            </div>
             <form class="chat-form" id="chatForm">
               <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
               <button type="submit">Send</button>
@@ -221,7 +329,8 @@
           <ul id="sessionList">
             {% for session in sessions %}
               <li class="session-item" data-session-id="{{ session.id }}" title="{{ session.summary|default:'No summary' }}">
-                {{ session.summary|truncatechars:40 }}
+                <span class="session-summary">{{ session.summary|truncatechars:40 }}</span>
+                <span class="delete-session" title="Delete session">🗑️</span>
               </li>
             {% endfor %}
           </ul>
