@@ -3,6 +3,7 @@ beautifulsoup4
 pandas
 django
 pillow
+langchain
 langchain-openai
 langchain-community
 langgraph

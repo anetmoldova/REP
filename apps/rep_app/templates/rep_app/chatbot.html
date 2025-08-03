@@ -8,17 +8,19 @@
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
   <script defer>
-    document.addEventListener("DOMContentLoaded", function () {
-      const toggleBtn = document.getElementById("sidebarToggle");
+    document.addEventListener("DOMContentLoaded", async function () {
       const sidebar = document.querySelector(".sidebar");
+      const toggleBtn = document.getElementById("sidebarToggle");
       const chatForm = document.getElementById("chatForm");
       const chatInput = document.getElementById("chatInput");
       const chatBox = document.getElementById("chatBox");
-      const sessionSelect = document.getElementById("sessionSelect");
       const newSessionBtn = document.getElementById("newSessionBtn");
       const newSessionTopBtn = document.getElementById("newSessionTopBtn");
       const sessionList = document.getElementById("sessionList");
 
+      let sessionId = null;
+
+      // === Sidebar toggle ===
       if (localStorage.getItem("sidebarCollapsed") === "true") {
         sidebar.classList.add("collapsed");
       }
@@ -28,195 +30,139 @@
         localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
       });
 
+      // === Profile dropdown ===
       const profilePic = document.getElementById("profilePic");
       const dropdown = document.getElementById("dropdownMenu");
-      profilePic.addEventListener("click", () => {
+      const profile = document.getElementById("profileDropdown");
+
+      profilePic.addEventListener("click", (e) => {
         dropdown.classList.toggle("show");
+        e.stopPropagation();
       });
 
       document.addEventListener("click", function (e) {
-        const profile = document.getElementById("profileDropdown");
         if (!profile.contains(e.target)) {
           dropdown.classList.remove("show");
         }
       });
 
       function injectSummaryText(text) {
-        if (!text) return;
+        if (!text || text === "New conversation") return;
         const summaryDiv = document.createElement("div");
-        summaryDiv.className = "message bot-msg";
+        summaryDiv.className = "message bot-msg summary";
         summaryDiv.innerHTML = `<div class="msg-inner"><strong>Summary:</strong> ${text}</div>`;
         chatBox.appendChild(summaryDiv);
       }
 
-      function setChatEnabled(enabled) {
-        chatInput.disabled = !enabled;
-        chatForm.querySelector("button").disabled = !enabled;
+      function appendUserMessage(message) {
+        const div = document.createElement("div");
+        div.className = "message user-msg";
+        div.innerHTML = `<div class="msg-inner">${message}</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
-        const container = document.querySelector(".chat-container");
-        if (!enabled) {
-          container.classList.add("disabled");
+      function appendBotMessage(content, isError = false) {
+        const div = document.createElement("div");
+        div.className = `message bot-msg${isError ? ' error' : ''}`;
+        div.innerHTML = `<div class="msg-inner">${content}</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function updateSessionInList(sessionId, summary) {
+        let existing = sessionList.querySelector(`[data-session-id="${sessionId}"]`);
+        if (!existing) {
+          const item = document.createElement("li");
+          item.className = "session-item";
+          item.dataset.sessionId = sessionId;
+          item.innerHTML = `
+            <span class="session-summary">${summary}</span>
+            <span class="delete-session" title="Delete session">🗑️</span>
+          `;
+          sessionList.prepend(item);
+          if (sessionList.children.length > 10) sessionList.lastElementChild.remove();
         } else {
-          container.classList.remove("disabled");
+          const summarySpan = existing.querySelector(".session-summary");
+          if (summarySpan) summarySpan.textContent = summary;
         }
       }
 
-      setChatEnabled(false);
-
-      sessionSelect.addEventListener("change", async () => {
-        const sessionId = sessionSelect.value;
-        chatBox.innerHTML = "";
-
-        if (!sessionId) {
-          chatBox.classList.add("empty");
-          chatBox.innerHTML = `<div class="chat-placeholder">Please start a new conversation or select a past session.</div>`;
-          setChatEnabled(false);
-          return;
-        }
-
+      async function createNewSession() {
         try {
-          const res = await fetch(`/chat/session-summary/${sessionId}/`);
+          const res = await fetch("{% url 'start_session' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+          });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          
           const data = await res.json();
-          injectSummaryText(data.summary);
-          chatBox.classList.remove("empty");
-          setChatEnabled(true);
-        } catch {
-          chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
-          chatBox.classList.add("empty");
-          setChatEnabled(false);
+          sessionId = data.session_id;
+
+          // Update session list
+          updateSessionInList(sessionId, data.summary);
+
+        } catch (error) {
+          console.error("Error creating session:", error);
+          appendBotMessage("Error: Failed to start a new session.", true);
         }
-      });
-      sessionList.addEventListener("click", async (e) => {
-        const target = e.target.closest(".session-item");
-        if (!target) return;
-
-        const sessionId = target.dataset.sessionId;
-        if (!sessionId) return;
-
-        // Set dropdown to match
-        sessionSelect.value = sessionId;
-        [...sessionList.children].forEach(li => li.classList.remove("active"));
-        target.classList.add("active");
-
-        chatBox.innerHTML = "";
-
-        try {
-          const res = await fetch(`/chat/session-summary/${sessionId}/`);
-          const data = await res.json();
-          injectSummaryText(data.summary);
-          chatBox.classList.remove("empty");
-          setChatEnabled(true);
-        } catch {
-          chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
-          chatBox.classList.add("empty");
-          setChatEnabled(false);
-        }
-      });
-
-  sessionList.addEventListener("click", async (e) => {
-    const deleteBtn = e.target.closest(".delete-session");
-    if (deleteBtn) {
-      const item = deleteBtn.closest(".session-item");
-      const sessionId = item.dataset.sessionId;
-
-      if (!sessionId) return;
-      if (!confirm("Delete this session?")) return;
-
-      try {
-        const res = await fetch(`/chat/delete-session/${sessionId}/`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Failed");
-
-        item.remove();
-
-        // Optional: clear if the deleted session was selected
-        if (sessionSelect.value === sessionId) {
-          sessionSelect.value = "";
-          chatBox.classList.add("empty");
-          chatBox.innerHTML = `<div class="chat-placeholder">Please start a new conversation or select a past session.</div>`;
-          setChatEnabled(false);
-        }
-
-        // Also remove from dropdown
-        const opt = sessionSelect.querySelector(`option[value="${sessionId}"]`);
-        if (opt) opt.remove();
-      } catch {
-        alert("Failed to delete session.");
       }
 
-      return; // Skip the rest if it was a delete click
-    }
+      async function loadMessages(sessionId) {
+        try {
+          const res = await fetch(`/chat/session-messages/${sessionId}/`);
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          
+          const data = await res.json();
+          chatBox.innerHTML = "";
+          
+          if (data.length === 0) {
+            appendBotMessage("No messages in this conversation. Start chatting!");
+          } else {
+            data.forEach(msg => {
+              const div = document.createElement("div");
+              div.className = `message ${msg.is_user ? 'user-msg' : 'bot-msg'}`;
+              div.innerHTML = `<div class="msg-inner">${msg.content}</div>`;
+              chatBox.appendChild(div);
+            });
+          }
+          
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } catch (error) {
+          console.error("Error loading messages:", error);
+          appendBotMessage("Failed to load previous messages.", true);
+        }
+      }
 
-  // Existing session selection logic
-  const target = e.target.closest(".session-item");
-  if (!target) return;
-  const sessionId = target.dataset.sessionId;
-  if (!sessionId) return;
-
-  sessionSelect.value = sessionId;
-  [...sessionList.children].forEach(li => li.classList.remove("active"));
-  target.classList.add("active");
-
-  chatBox.innerHTML = "";
-
-  try {
-    const res = await fetch(`/chat/session-summary/${sessionId}/`);
-    const data = await res.json();
-    injectSummaryText(data.summary);
-    chatBox.classList.remove("empty");
-    setChatEnabled(true);
-  } catch {
-    chatBox.innerHTML = `<div class="chat-placeholder">Failed to load session summary.</div>`;
-    chatBox.classList.add("empty");
-    setChatEnabled(false);
-  }
-});
-
+      // Don't create initial session - wait for user to send a message
+      // Show welcome message instead
+      appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
 
       newSessionTopBtn.addEventListener("click", () => newSessionBtn.click());
 
       newSessionBtn.addEventListener("click", async () => {
-        try {
-          const response = await fetch("{% url 'start_session' %}", {
-            method: "POST",
-            headers: { "X-CSRFToken": "{{ csrf_token }}" },
-          });
-          const data = await response.json();
-
-          const option = document.createElement("option");
-          option.value = data.session_id;
-          option.textContent = data.summary || `(new) ${data.session_id}`;
-          option.selected = true;
-          sessionSelect.appendChild(option);
-          sessionSelect.value = data.session_id;
-          chatBox.innerHTML = "";
-          injectSummaryText(data.summary);
-          setChatEnabled(true);
-
-          const item = document.createElement("li");
-          item.className = "session-item";
-          item.textContent = data.summary || `(new) ${data.session_id}`;
-          item.dataset.sessionId = data.session_id;
-          sessionList.prepend(item);
-          if (sessionList.children.length > 10) sessionList.lastElementChild.remove();
-        } catch (err) {
-          alert("Failed to create a session.");
-        }
+        chatBox.innerHTML = "";
+        sessionId = null; // Reset session ID
+        appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
       });
 
       chatForm.addEventListener("submit", async function (e) {
         e.preventDefault();
         const message = chatInput.value.trim();
-        const sessionId = sessionSelect.value;
-        if (!message || !sessionId) return;
+        if (!message) return;
 
-        setChatEnabled(false);
+        // Create session if it doesn't exist
+        if (!sessionId) {
+          await createNewSession();
+        }
 
-        const userMessage = document.createElement("div");
-        userMessage.className = "message user-msg";
-        userMessage.innerHTML = `<div class="msg-inner">${message}</div>`;
-        chatBox.appendChild(userMessage);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
+        appendUserMessage(message);
         chatInput.value = "";
 
         const typingIndicator = document.createElement("div");
@@ -235,24 +181,62 @@
             body: JSON.stringify({ message, session_id: sessionId }),
           });
 
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
           const data = await response.json();
           typingIndicator.remove();
+          appendBotMessage(data.response);
 
-          const botMessage = document.createElement("div");
-          botMessage.className = "message bot-msg";
-          botMessage.innerHTML = `<div class="msg-inner">${data.response}</div>`;
-          chatBox.appendChild(botMessage);
-          chatBox.scrollTop = chatBox.scrollHeight;
-        } catch {
+          if (data.summary && data.summary !== "New conversation") {
+            updateSessionInList(sessionId, data.summary);
+          }
+
+        } catch (error) {
+          console.error("Error sending message:", error);
           typingIndicator.remove();
-          const botError = document.createElement("div");
-          botError.className = "message bot-msg error";
-          botError.innerHTML = `<div class="msg-inner">Error: Failed to get a response.</div>`;
-          chatBox.appendChild(botError);
-          chatBox.scrollTop = chatBox.scrollHeight;
+          appendBotMessage("Error: Failed to get a response.", true);
+        }
+      });
+
+      sessionList.addEventListener("click", async (e) => {
+        const deleteBtn = e.target.closest(".delete-session");
+        if (deleteBtn) {
+          const item = deleteBtn.closest(".session-item");
+          const deleteId = item.dataset.sessionId;
+          if (!deleteId || !confirm("Delete this session?")) return;
+
+          try {
+            const res = await fetch(`/chat/delete-session/${deleteId}/`, { 
+              method: "DELETE",
+              headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            });
+            
+            if (!res.ok) {
+              throw new Error("Failed to delete");
+            }
+            
+            item.remove();
+            
+            // If we deleted the current session, create a new one
+            if (deleteId == sessionId) {
+              sessionId = null;
+              chatBox.innerHTML = "";
+              appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
+            }
+          } catch (error) {
+            console.error("Error deleting session:", error);
+            alert("Failed to delete session.");
+          }
+          return;
         }
 
-        setChatEnabled(true);
+        const target = e.target.closest(".session-item");
+        if (!target) return;
+
+        sessionId = target.dataset.sessionId;
+        await loadMessages(sessionId);
       });
     });
   </script>
@@ -261,9 +245,7 @@
   <div class="layout">
     <aside class="sidebar">
       <button id="sidebarToggle" class="toggle-btn">☰</button>
-      <div class="logo">
-        <span class="logo-text">REP</span>
-      </div>
+      <div class="logo"><span class="logo-text">REP</span></div>
       <nav class="nav">
         <a href="{% url 'dashboard' %}" class="nav-item" title="Overview">
           <span class="nav-icon">📊</span>
@@ -296,27 +278,9 @@
         <div class="chat-main">
           <div class="chat-container">
             <div class="chat-header">
-              <div class="session-select-left">
-                <label for="sessionSelect">Select Session:</label>
-                <select id="sessionSelect" required>
-                  <option value="">-- Choose session --</option>
-                  {% for session in sessions %}
-                    <option value="{{ session.id }}">
-                      {{ session.summary|truncatechars:40 }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
               <button id="newSessionTopBtn" class="big-new-session">➕</button>
             </div>
-
-            <div class="chat-box{% if initial_prompt %} empty{% endif %}" id="chatBox">
-              {% if initial_prompt %}
-                <div class="chat-placeholder">
-                  Please start a new conversation or select a past session.
-                </div>
-              {% endif %}
-            </div>
+            <div class="chat-box" id="chatBox"></div>
             <form class="chat-form" id="chatForm">
               <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
               <button type="submit">Send</button>

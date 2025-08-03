@@ -9,15 +9,6 @@
   padding: 1rem;
 }
 
-.chat-container.disabled {
-  opacity: 0.5;
-}
-
-.chat-container.disabled .chat-form,
-.chat-container.disabled .chat-box {
-  pointer-events: none;
-}
-
 .chat-box {
   flex: 1;
   overflow-y: auto;

@@ -13,8 +13,25 @@ from langchain.schema import HumanMessage
 from langchain_openai import ChatOpenAI
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+import os
 
-llm = ChatOpenAI(temperature=0.5)
+# Import the SQL agent from langchain_bot
+from .utils.langchain_bot import get_agent_response, llm
+
+def get_llm_response(prompt):
+    """Get response from the SQL agent with fallback"""
+    try:
+        response = get_agent_response(prompt)
+        return response
+    except Exception as e:
+        print(f"SQL Agent error: {e}")
+        # Fallback to simple LLM if SQL agent fails
+        try:
+            fallback_response = llm([HumanMessage(content=prompt)]).content
+            return fallback_response
+        except Exception as fallback_error:
+            print(f"Fallback LLM error: {fallback_error}")
+            return f"I'm having trouble connecting to my services right now. Please try again later. (Error: {str(e)})"
 
 # === PUBLIC PAGES ===
 def landing(request):
@@ -53,6 +70,7 @@ def chatbot_view(request):
 def start_session(request):
     if request.method == 'POST':
         session = ChatSession.objects.create(user=request.user, summary="New conversation")
+        print("🧪 New session created:", session.id, "user:", request.user)
         return JsonResponse({
             'session_id': session.id,
             'summary': session.summary,
@@ -66,33 +84,38 @@ def chat_api(request):
             data = json.loads(request.body)
             message = data.get('message')
             session_id = data.get('session_id')
+            
+            if not message or not session_id:
+                return JsonResponse({'response': 'Missing message or session_id'}, status=400)
+            
             session = get_object_or_404(ChatSession, id=session_id, user=request.user)
 
+            # Save user message
             ChatMessage.objects.create(session=session, is_user=True, content=message)
 
-            history = list(session.messages.order_by('timestamp'))[-10:]
-            prompt = "\n".join([
-                f"User: {m.content}" if m.is_user else f"Bot: {m.content}"
-                for m in history
-            ]) + f"\nUser: {message}"
-
-            # LLM response
-            response = llm([HumanMessage(content=prompt)]).content
+            # Get response from SQL agent (which will automatically choose the right tool)
+            response = get_agent_response(message, session)
             ChatMessage.objects.create(session=session, is_user=False, content=response)
 
-            # Summarize the session
-            try:
-                summary_prompt = (
-                    "Summarize the following chat in one sentence for use as a session label:\n\n"
-                    + prompt
-                )
-                summary_result = llm([HumanMessage(content=summary_prompt)]).content
-                session.summary = summary_result[:200]
-            except Exception as summary_error:
-                session.summary = message[:50] + ('...' if len(message) > 50 else '')
+            # Generate session summary (if it's default or empty)
+            if not session.summary or session.summary.strip() == "New conversation":
+                try:
+                    summary_prompt = (
+                        "Summarize the following chat in one sentence for use as a session label:\n\n"
+                        f"User: {message}\nAssistant: {response}"
+                    )
+                    summary_result = get_agent_response(summary_prompt).strip()
+                    session.summary = summary_result[:200] or message[:50]
+                except Exception as e:
+                    print(f"Summary generation error: {e}")
+                    session.summary = message[:50] + ('...' if len(message) > 50 else '')
 
-            session.save()
-            return JsonResponse({'response': response})
+                session.save()
+
+            return JsonResponse({
+                'response': response,
+                'summary': session.summary
+            })
 
         except Exception as e:
             import traceback
@@ -105,6 +128,7 @@ def get_session_summary(request, session_id):
     return JsonResponse({'summary': session.summary or ''})
 
 @require_http_methods(["DELETE"])
+@login_required
 def delete_session(request, session_id):
     try:
         session = ChatSession.objects.get(pk=session_id, user=request.user)
@@ -112,3 +136,17 @@ def delete_session(request, session_id):
         return JsonResponse({"status": "deleted"})
     except ChatSession.DoesNotExist:
         return JsonResponse({"error": "Session not found"}, status=404)
+    
+@login_required
+def session_messages(request, session_id):
+    try:
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        messages = session.messages.order_by('timestamp')
+        data = [
+            {'is_user': m.is_user, 'content': m.content}
+            for m in messages
+        ]
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        print(f"Error loading session messages: {e}")
+        return JsonResponse([], safe=False)
