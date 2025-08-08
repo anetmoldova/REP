@@ -1,0 +1,183 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - REP</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script defer>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggleBtn = document.getElementById("sidebarToggle");
+      const sidebar = document.querySelector(".sidebar");
+
+      // Restore sidebar state
+      if (localStorage.getItem("sidebarCollapsed") === "true") {
+        sidebar.classList.add("collapsed");
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+        localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
+      });
+
+      const profilePic = document.getElementById("profilePic");
+      const dropdown = document.getElementById("dropdownMenu");
+      profilePic.addEventListener("click", () => {
+        dropdown.classList.toggle("show");
+      });
+
+      document.addEventListener("click", function (e) {
+        const profile = document.getElementById("profileDropdown");
+        if (!profile.contains(e.target)) {
+          dropdown.classList.remove("show");
+        }
+      });
+
+      // Render Plotly charts if data is available
+      {% if data_available and charts %}
+        {% if charts.rent_chart %}
+          Plotly.newPlot('rent-chart', JSON.parse('{{ charts.rent_chart|safe }}').data, JSON.parse('{{ charts.rent_chart|safe }}').layout);
+        {% endif %}
+        
+        {% if charts.area_chart %}
+          Plotly.newPlot('area-chart', JSON.parse('{{ charts.area_chart|safe }}').data, JSON.parse('{{ charts.area_chart|safe }}').layout);
+        {% endif %}
+        
+        {% if charts.price_per_m2_chart %}
+          Plotly.newPlot('price-per-m2-chart', JSON.parse('{{ charts.price_per_m2_chart|safe }}').data, JSON.parse('{{ charts.price_per_m2_chart|safe }}').layout);
+        {% endif %}
+        
+        {% if charts.property_count_chart %}
+          Plotly.newPlot('property-count-chart', JSON.parse('{{ charts.property_count_chart|safe }}').data, JSON.parse('{{ charts.property_count_chart|safe }}').layout);
+        {% endif %}
+      {% endif %}
+    });
+  </script>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button id="sidebarToggle" class="toggle-btn">☰</button>
+      <div class="logo">
+        <span class="logo-text">REP</span>
+      </div>
+      <nav class="nav">
+        <a href="{% url 'dashboard' %}" class="nav-item active" title="Overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Overview</span>
+        </a>
+        <a href="{% url 'chatbot' %}" class="nav-item" title="ChatBot">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-text">ChatBot</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main">
+      <div class="top-bar">
+        <div class="dashboard-title">REP Dashboard</div>
+        <div class="profile" id="profileDropdown">
+          <span class="username">Welcome, {{ request.user.username }}!</span>
+          <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" id="profilePic" />
+          <div class="dropdown" id="dropdownMenu">
+            <a href="#">Settings</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-btn logout-btn">Logout</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {% if data_available %}
+        <!-- Filters Section -->
+        <div class="filters-section">
+          <h3>Filters</h3>
+          <form method="get" class="filter-form">
+            <div class="filter-group">
+              <label for="region-filter">Region:</label>
+              <select name="region" id="region-filter" onchange="this.form.submit()">
+                <option value="all" {% if selected_region == '' or selected_region == 'all' %}selected{% endif %}>All Regions</option>
+                {% for region in available_regions %}
+                  <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="filter-btn">Apply Filter</button>
+            {% if selected_region and selected_region != 'all' %}
+              <a href="{% url 'dashboard' %}" class="clear-filter-btn">Clear Filter</a>
+            {% endif %}
+          </form>
+        </div>
+
+        <!-- KPIs Section -->
+        <div class="kpi-section">
+          <h3>Key Performance Indicators</h3>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-value">{{ kpis.total_properties|default:"0" }}</div>
+              <div class="kpi-label">Total Properties</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value">{{ kpis.avg_rent|default:"0" }} CZK</div>
+              <div class="kpi-label">Average Monthly Rent</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value">{{ kpis.max_rent|default:"0" }} CZK</div>
+              <div class="kpi-label">Highest Monthly Rent</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value">{{ kpis.min_rent|default:"0" }} CZK</div>
+              <div class="kpi-label">Lowest Monthly Rent</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Section - Simple Vertical Stack -->
+        <div class="charts-section">
+          <div class="chart-container">
+            <h3>Average Monthly Rent by Region</h3>
+            <div id="rent-chart"></div>
+          </div>
+          
+          <div class="chart-container">
+            <h3>Property Sizes by Region</h3>
+            <div id="area-chart"></div>
+          </div>
+          
+          <div class="chart-container">
+            <h3>Price per Square Meter by Region</h3>
+            <div id="price-per-m2-chart"></div>
+          </div>
+          
+          <div class="chart-container">
+            <h3>Property Distribution by Region</h3>
+            <div id="property-count-chart"></div>
+          </div>
+        </div>
+      {% else %}
+        <!-- No Data Available -->
+        <div class="no-data-section">
+          <div class="no-data-card">
+            <h3>📊 Real Estate Analytics Dashboard</h3>
+            <p>No data available at the moment. Please check your database connection.</p>
+            <div class="no-data-info">
+              <p><strong>Expected Data:</strong></p>
+              <ul>
+                <li>Average monthly rent by region</li>
+                <li>Property sizes and areas</li>
+                <li>Price per square meter analysis</li>
+                <li>Property distribution across regions</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

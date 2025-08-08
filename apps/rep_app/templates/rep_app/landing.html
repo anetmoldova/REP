@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RealEstateIQ - Landing Page</title>
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+
+  <div class="top-notice">
+    <span class="font-medium">Live:</span> Market data refreshed hourly.
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <div class="logo">RealEstatePricing</div>
+      <div class="header-actions">
+        <a href="{% url 'login' %}" class="btn-primary">Login</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          See the <span class="text-primary">MARKET</span>.<br />
+          Know the value.<br />
+          Move smarter.
+        </h1>
+        <div class="hero-badges">
+          <span class="badge">Hourly Updates</span>
+          <span class="badge badge-secondary">AI Insights</span>
+        </div>
+        <p class="hero-desc">
+          Real-time pricing intelligence from millions of property listings—analyzed, benchmarked, and visualized in a simple, actionable format for buyers, investors, analysts, and anyone looking to make smarter real estate decisions.
+        </p>
+        <div style="height: 2em;"></div>
+        <div class="hero-actions">
+          <a href="{% url 'signup' %}" class="btn-accent">Get Started</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img src="{% static 'rep_app/preview_landing_page_v2.png' %}" alt="Visualization Preview" class="hero-image" />
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="features">
+    <div class="features-inner">
+      <h2 class="features-title">Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>Smart Pricing Insights</h3>
+          <p>Compare listings against local medians & historical trends instantly.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Heatmaps & Trends</h3>
+          <p>Visualize neighborhood momentum & demand density.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Comparable Finder</h3>
+          <p>Auto-surface relevant comps with configurable filters.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

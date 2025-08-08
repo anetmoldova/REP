@@ -1,0 +1,307 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChatBot - REP</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+  <script defer>
+    document.addEventListener("DOMContentLoaded", async function () {
+      const sidebar = document.querySelector(".sidebar");
+      const toggleBtn = document.getElementById("sidebarToggle");
+      const chatForm = document.getElementById("chatForm");
+      const chatInput = document.getElementById("chatInput");
+      const chatBox = document.getElementById("chatBox");
+      const newSessionBtn = document.getElementById("newSessionBtn");
+      const newSessionTopBtn = document.getElementById("newSessionTopBtn");
+      const sessionList = document.getElementById("sessionList");
+
+      let sessionId = null;
+
+      // === Sidebar toggle ===
+      if (localStorage.getItem("sidebarCollapsed") === "true") {
+        sidebar.classList.add("collapsed");
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+        localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
+      });
+
+      // === Profile dropdown ===
+      const profilePic = document.getElementById("profilePic");
+      const dropdown = document.getElementById("dropdownMenu");
+      const profile = document.getElementById("profileDropdown");
+
+      profilePic.addEventListener("click", (e) => {
+        dropdown.classList.toggle("show");
+        e.stopPropagation();
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!profile.contains(e.target)) {
+          dropdown.classList.remove("show");
+        }
+      });
+
+      function injectSummaryText(text) {
+        if (!text || text === "New conversation") return;
+        const summaryDiv = document.createElement("div");
+        summaryDiv.className = "message bot-msg summary";
+        summaryDiv.innerHTML = `<div class="msg-inner"><strong>Summary:</strong> ${text}</div>`;
+        chatBox.appendChild(summaryDiv);
+      }
+
+      function appendUserMessage(message) {
+        const div = document.createElement("div");
+        div.className = "message user-msg";
+        div.innerHTML = `<div class="msg-inner">${message}</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function appendBotMessage(content, isError = false) {
+        const div = document.createElement("div");
+        div.className = `message bot-msg${isError ? ' error' : ''}`;
+        div.innerHTML = `<div class="msg-inner">${content}</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function updateSessionInList(sessionId, summary) {
+        let existing = sessionList.querySelector(`[data-session-id="${sessionId}"]`);
+        if (!existing) {
+          const item = document.createElement("li");
+          item.className = "session-item";
+          item.dataset.sessionId = sessionId;
+          item.innerHTML = `
+            <span class="session-summary">${summary}</span>
+            <span class="delete-session" title="Delete session">🗑️</span>
+          `;
+          sessionList.prepend(item);
+          if (sessionList.children.length > 10) sessionList.lastElementChild.remove();
+        } else {
+          const summarySpan = existing.querySelector(".session-summary");
+          if (summarySpan) summarySpan.textContent = summary;
+        }
+      }
+
+      async function createNewSession() {
+        try {
+          const res = await fetch("{% url 'start_session' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+          });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          
+          const data = await res.json();
+          sessionId = data.session_id;
+
+          // Update session list
+          updateSessionInList(sessionId, data.summary);
+
+        } catch (error) {
+          console.error("Error creating session:", error);
+          appendBotMessage("Error: Failed to start a new session.", true);
+        }
+      }
+
+      async function loadMessages(sessionId) {
+        try {
+          const res = await fetch(`/chat/session-messages/${sessionId}/`);
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          
+          const data = await res.json();
+          chatBox.innerHTML = "";
+          
+          if (data.length === 0) {
+            appendBotMessage("No messages in this conversation. Start chatting!");
+          } else {
+            data.forEach(msg => {
+              const div = document.createElement("div");
+              div.className = `message ${msg.is_user ? 'user-msg' : 'bot-msg'}`;
+              div.innerHTML = `<div class="msg-inner">${msg.content}</div>`;
+              chatBox.appendChild(div);
+            });
+          }
+          
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } catch (error) {
+          console.error("Error loading messages:", error);
+          appendBotMessage("Failed to load previous messages.", true);
+        }
+      }
+
+      // Don't create initial session - wait for user to send a message
+      // Show welcome message instead
+      appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
+
+      newSessionTopBtn.addEventListener("click", () => newSessionBtn.click());
+
+      newSessionBtn.addEventListener("click", async () => {
+        chatBox.innerHTML = "";
+        sessionId = null; // Reset session ID
+        appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
+      });
+
+      chatForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Create session if it doesn't exist
+        if (!sessionId) {
+          await createNewSession();
+        }
+
+        appendUserMessage(message);
+        chatInput.value = "";
+
+        const typingIndicator = document.createElement("div");
+        typingIndicator.className = "message bot-msg typing";
+        typingIndicator.innerHTML = `<div class="msg-inner">...</div>`;
+        chatBox.appendChild(typingIndicator);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+          const response = await fetch("{% url 'chat_api' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: JSON.stringify({ message, session_id: sessionId }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          typingIndicator.remove();
+          appendBotMessage(data.response);
+
+          if (data.summary && data.summary !== "New conversation") {
+            updateSessionInList(sessionId, data.summary);
+          }
+
+        } catch (error) {
+          console.error("Error sending message:", error);
+          typingIndicator.remove();
+          appendBotMessage("Error: Failed to get a response.", true);
+        }
+      });
+
+      sessionList.addEventListener("click", async (e) => {
+        const deleteBtn = e.target.closest(".delete-session");
+        if (deleteBtn) {
+          const item = deleteBtn.closest(".session-item");
+          const deleteId = item.dataset.sessionId;
+          if (!deleteId || !confirm("Delete this session?")) return;
+
+          try {
+            const res = await fetch(`/chat/delete-session/${deleteId}/`, { 
+              method: "DELETE",
+              headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            });
+            
+            if (!res.ok) {
+              throw new Error("Failed to delete");
+            }
+            
+            item.remove();
+            
+            // If we deleted the current session, create a new one
+            if (deleteId == sessionId) {
+              sessionId = null;
+              chatBox.innerHTML = "";
+              appendBotMessage("Hello! I'm your real estate assistant. Ask me about prices, areas, or any real estate questions!");
+            }
+          } catch (error) {
+            console.error("Error deleting session:", error);
+            alert("Failed to delete session.");
+          }
+          return;
+        }
+
+        const target = e.target.closest(".session-item");
+        if (!target) return;
+
+        sessionId = target.dataset.sessionId;
+        await loadMessages(sessionId);
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <button id="sidebarToggle" class="toggle-btn">☰</button>
+      <div class="logo"><span class="logo-text">REP</span></div>
+      <nav class="nav">
+        <a href="{% url 'dashboard' %}" class="nav-item" title="Overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Overview</span>
+        </a>
+        <a href="{% url 'chatbot' %}" class="nav-item active" title="ChatBot">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-text">ChatBot</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <div class="top-bar">
+        <div class="dashboard-title">REP ChatBot</div>
+        <div class="profile" id="profileDropdown">
+          <span class="username">Welcome, {{ request.user.username }}!</span>
+          <img src="{% static 'rep_app/user_profile_v1.png' %}" alt="User" id="profilePic" />
+          <div class="dropdown" id="dropdownMenu">
+            <a href="#">Settings</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-btn logout-btn">Logout</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-layout">
+        <div class="chat-main">
+          <div class="chat-container">
+            <div class="chat-header">
+              <button id="newSessionTopBtn" class="big-new-session">➕</button>
+            </div>
+            <div class="chat-box" id="chatBox"></div>
+            <form class="chat-form" id="chatForm">
+              <input type="text" id="chatInput" placeholder="Ask the chatbot something..." required />
+              <button type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+
+        <aside class="chat-sidebar">
+          <h3>Recent Conversations</h3>
+          <ul id="sessionList">
+            {% for session in sessions %}
+              <li class="session-item" data-session-id="{{ session.id }}" title="{{ session.summary|default:'No summary' }}">
+                <span class="session-summary">{{ session.summary|truncatechars:40 }}</span>
+                <span class="delete-session" title="Delete session">🗑️</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <button type="button" id="newSessionBtn" style="display:none;">➕</button>
+</body>
+</html>
